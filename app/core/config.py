@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     password_reset_token_expire_minutes: int = 30
 
     cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1):\d+$"
     frontend_base_url: str = "http://localhost:3000"
 
 
