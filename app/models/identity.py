@@ -45,6 +45,13 @@ class UserProfile(Base):
     country_code: Mapped[str | None] = mapped_column(CHAR(2))
     timezone: Mapped[str | None] = mapped_column(String(64))
     website_url: Mapped[str | None] = mapped_column(Text)
+    language: Mapped[str | None] = mapped_column(String(30))
+    facebook_url: Mapped[str | None] = mapped_column(Text)
+    instagram_url: Mapped[str | None] = mapped_column(Text)
+    linkedin_url: Mapped[str | None] = mapped_column(Text)
+    tiktok_url: Mapped[str | None] = mapped_column(Text)
+    twitter_url: Mapped[str | None] = mapped_column(Text)
+    youtube_url: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(server_default=text("now()"), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
