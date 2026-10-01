@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.identity import User, UserProfile
 from app.schemas.user import UserProfileOut, UserProfileUpdate
+from app.services import rbac_service
 
 PROFILE_FIELDS = (
     "first_name",
@@ -22,9 +23,11 @@ PROFILE_FIELDS = (
 )
 
 
-def _merge(user: User, profile: UserProfile | None) -> UserProfileOut:
+async def _merge(db: AsyncSession, user: User, profile: UserProfile | None) -> UserProfileOut:
     profile_data = {field: getattr(profile, field) for field in PROFILE_FIELDS} if profile else {}
     return UserProfileOut(
+        roles=await rbac_service.get_role_codes(db, user.id),
+        permissions=await rbac_service.get_permission_codes(db, user.id),
         id=user.id,
         email=user.email,
         display_name=user.display_name,
@@ -36,7 +39,7 @@ def _merge(user: User, profile: UserProfile | None) -> UserProfileOut:
 
 async def get_profile(db: AsyncSession, user: User) -> UserProfileOut:
     profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user.id))
-    return _merge(user, profile)
+    return await _merge(db, user, profile)
 
 
 async def update_profile(db: AsyncSession, user: User, data: UserProfileUpdate) -> UserProfileOut:
@@ -58,4 +61,4 @@ async def update_profile(db: AsyncSession, user: User, data: UserProfileUpdate) 
     await db.commit()
     await db.refresh(profile)
     await db.refresh(user)
-    return _merge(user, profile)
+    return await _merge(db, user, profile)

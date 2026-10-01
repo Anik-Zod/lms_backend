@@ -12,6 +12,8 @@ class UserProfileOut(BaseModel):
     display_name: str
     status: str
     created_at: datetime
+    roles: list[str] = []
+    permissions: list[str] = []
 
     first_name: str | None = None
     last_name: str | None = None

@@ -16,15 +16,22 @@ from app.schemas.auth import (
     TokenResponse,
     UserOut,
 )
-from app.services import auth_service
+from app.services import auth_service, rbac_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _to_user_out(db: AsyncSession, user: User) -> UserOut:
+    out = UserOut.model_validate(user)
+    out.roles = await rbac_service.get_role_codes(db, user.id)
+    out.permissions = await rbac_service.get_permission_codes(db, user.id)
+    return out
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     user = await auth_service.register_user(db, payload.email, payload.password, payload.display_name)
-    return user
+    return await _to_user_out(db, user)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -48,8 +55,8 @@ async def logout(
 
 
 @router.get("/me", response_model=UserOut)
-async def me(current_user: User = Depends(get_current_user)):
-    return current_user
+async def me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await _to_user_out(db, current_user)
 
 
 @router.post("/forgot-password", response_model=MessageResponse)

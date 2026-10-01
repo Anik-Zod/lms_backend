@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1):\d+$"
     frontend_base_url: str = "http://localhost:3000"
 
+    # Uploaded lesson files are kept on local disk and served through signed URLs.
+    media_root: str = "media"
+    media_max_upload_mb: int = 1024
+    media_url_expire_minutes: int = 360
+
 
 @lru_cache
 def get_settings() -> Settings:

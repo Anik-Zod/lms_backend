@@ -37,6 +37,8 @@ class UserOut(BaseModel):
     display_name: str
     status: str
     created_at: datetime
+    roles: list[str] = []
+    permissions: list[str] = []
 
 
 class MessageResponse(BaseModel):

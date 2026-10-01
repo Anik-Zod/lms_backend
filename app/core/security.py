@@ -31,6 +31,12 @@ def create_refresh_token(user_id: uuid.UUID) -> str:
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
+def create_media_token(asset_id: uuid.UUID) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.media_url_expire_minutes)
+    payload = {"sub": str(asset_id), "type": "media", "exp": expire}
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+
 def decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])

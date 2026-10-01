@@ -18,6 +18,7 @@ from app.core.security import (
 )
 from app.models.identity import AuthIdentity, PasswordResetToken, User, UserSession
 from app.schemas.auth import TokenResponse
+from app.services import rbac_service
 
 
 def _hash_token(token: str) -> str:
@@ -40,6 +41,7 @@ async def register_user(db: AsyncSession, email: str, password: str, display_nam
         password_hash=hash_password(password),
     )
     db.add(identity)
+    await rbac_service.grant_role(db, user.id, rbac_service.DEFAULT_ROLE_CODE)
     await db.commit()
     await db.refresh(user)
     return user

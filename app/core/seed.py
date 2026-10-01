@@ -2,9 +2,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.pricing import Currency
-from app.models.rbac import Permission, Role
 from app.models.enums import RoleScope
+from app.models.identity import User
+from app.models.pricing import Currency
+from app.models.rbac import Permission, Role, UserRoleAssignment
+from app.services.rbac_service import DEFAULT_ROLE_CODE
 
 PERMISSIONS = [
     ("course", "create", "course.create"),
@@ -22,11 +24,14 @@ PERMISSIONS = [
     ("review", "moderate", "review.moderate"),
     ("user", "suspend", "user.suspend"),
     ("payout", "read", "payout.read"),
+    ("user", "read", "user.read"),
+    ("role", "assign", "role.assign"),
 ]
 
 PLATFORM_ROLES = {
     "SUPER_ADMIN": [code for *_, code in PERMISSIONS],
     "PLATFORM_ADMIN": [
+        "course.create",
         "course.update",
         "course.publish",
         "course.archive",
@@ -37,9 +42,16 @@ PLATFORM_ROLES = {
         "review.moderate",
         "user.suspend",
         "payout.read",
+        "user.read",
+        "role.assign",
     ],
     "SUPPORT_AGENT": ["order.read", "enrollment.read", "user.suspend"],
     "CONTENT_MODERATOR": ["review.moderate", "course.archive"],
+    # Teachers manage their own courses through ownership, so they only need
+    # the right to create one. Global course.update would let them edit anyone's.
+    "TEACHER": ["course.create"],
+    # Every account gets this on registration.
+    "STUDENT": [],
 }
 
 
@@ -75,5 +87,13 @@ async def ensure_base_data(db: AsyncSession) -> None:
             existing_roles[role_code] = role
         else:
             role.permissions = perms
+    await db.flush()
+
+    # Accounts created before roles were assigned at registration become students.
+    has_role = select(UserRoleAssignment.id).where(UserRoleAssignment.user_id == User.id)
+    roleless_user_ids = (await db.scalars(select(User.id).where(~has_role.exists()))).all()
+    student_role = existing_roles[DEFAULT_ROLE_CODE]
+    for user_id in roleless_user_ids:
+        db.add(UserRoleAssignment(user_id=user_id, role_id=student_role.id))
 
     await db.commit()
