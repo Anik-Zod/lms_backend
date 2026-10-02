@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,8 +82,14 @@ async def download_media(asset_id: uuid.UUID, token: str, db: AsyncSession = Dep
         raise forbidden
 
     asset = await db.get(MediaAsset, asset_id)
-    path = media_service.file_path(asset) if asset is not None else None
-    if path is None or not path.is_file():
+    if asset is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    if asset.storage_provider == media_service.S3:
+        # The bucket serves the bytes itself, range requests included.
+        return RedirectResponse(media_service.presigned_url(asset))
+
+    path = media_service.file_path(asset)
+    if not path.is_file():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     return FileResponse(

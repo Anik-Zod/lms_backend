@@ -17,6 +17,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "redis>=5.0.8",
     "greenlet>=3.0.3",
+    "boto3>=1.43.107",
 ]
 
 [dependency-groups]

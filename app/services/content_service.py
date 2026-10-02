@@ -106,9 +106,9 @@ async def set_video(
         db.add(video)
     video.media_asset_id = asset.id
     video.duration_seconds = data.duration_seconds
-    # Local files are served as uploaded; there is no transcoding step.
+    # Files are served as uploaded; there is no transcoding step.
     video.processing_status = "READY"
-    video.provider = media_service.STORAGE_PROVIDER
+    video.provider = asset.storage_provider
 
     asset.content_id = content.id
     if data.duration_seconds is not None:

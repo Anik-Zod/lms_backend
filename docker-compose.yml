@@ -1,3 +1,5 @@
+name: lms
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -27,5 +29,21 @@ services:
       timeout: 5s
       retries: 10
 
+  # S3-compatible object storage for course images and videos.
+  # API on :9000, web console at http://localhost:9001/rustfs/console/ (log in with the keys below).
+  storage:
+    image: rustfs/rustfs:latest
+    container_name: lms-storage
+    environment:
+      RUSTFS_ACCESS_KEY: lmsaccess
+      RUSTFS_SECRET_KEY: lmssecret123
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - lms_storage_data:/data
+
 volumes:
   lms_postgres_data:
+  lms_storage_data:

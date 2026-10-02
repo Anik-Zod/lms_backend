@@ -138,7 +138,7 @@ async def update_course_status(
     course.status = payload.status
     await db.commit()
     await db.refresh(course)
-    return course
+    return (await course_service.with_catalog_fields(db, [course]))[0]
 
 
 @router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)

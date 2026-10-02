@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,7 +23,16 @@ class Settings(BaseSettings):
     cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1):\d+$"
     frontend_base_url: str = "http://localhost:3000"
 
-    # Uploaded lesson files are kept on local disk and served through signed URLs.
+    # Uploaded lesson files go to an S3-compatible bucket ("s3", the docker-compose
+    # storage service by default) or to media_root on local disk ("local"). Either
+    # way they are served through signed URLs.
+    storage_provider: Literal["s3", "local"] = "s3"
+    # Browsers follow presigned links to this address, so it must be reachable by them.
+    s3_endpoint_url: str = "http://localhost:9000"
+    s3_access_key: str = "lmsaccess"
+    s3_secret_key: str = "lmssecret123"
+    s3_bucket: str = "lms-media"
+    s3_region: str = "us-east-1"
     media_root: str = "media"
     media_max_upload_mb: int = 1024
     media_url_expire_minutes: int = 360
