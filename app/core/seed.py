@@ -2,11 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.models.enums import RoleScope
 from app.models.identity import User
 from app.models.pricing import Currency
 from app.models.rbac import Permission, Role, UserRoleAssignment
-from app.services.rbac_service import DEFAULT_ROLE_CODE
+from app.services import auth_service, rbac_service
+from app.services.rbac_service import DEFAULT_ROLE_CODE, SUPER_ADMIN_ROLE_CODE
 
 PERMISSIONS = [
     ("course", "create", "course.create"),
@@ -97,3 +99,30 @@ async def ensure_base_data(db: AsyncSession) -> None:
         db.add(UserRoleAssignment(user_id=user_id, role_id=student_role.id))
 
     await db.commit()
+
+
+async def create_admin(db: AsyncSession, email: str, password: str, display_name: str) -> bool:
+    """Makes the account a super admin, registering it first if needed. An existing
+    account keeps its password. Returns whether the account was created."""
+    user = await db.scalar(select(User).where(User.email == email))
+    created = user is None
+    if created:
+        user = await auth_service.register_user(db, email, password, display_name)
+    await rbac_service.grant_role(db, user.id, SUPER_ADMIN_ROLE_CODE)
+    await db.commit()
+    return created
+
+
+async def ensure_first_admin(db: AsyncSession) -> None:
+    if not settings.admin_email or not settings.admin_password:
+        return
+    has_super_admin = await db.scalar(
+        select(UserRoleAssignment.id)
+        .join(Role, Role.id == UserRoleAssignment.role_id)
+        .where(Role.code == SUPER_ADMIN_ROLE_CODE)
+        .limit(1)
+    )
+    if has_super_admin is not None:
+        return
+    display_name = settings.admin_email.split("@")[0]
+    await create_admin(db, settings.admin_email, settings.admin_password, display_name)

@@ -6,13 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.core.seed import ensure_base_data
+from app.core.seed import ensure_base_data, ensure_first_admin
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await ensure_base_data(db)
+        await ensure_first_admin(db)
     yield
 
 

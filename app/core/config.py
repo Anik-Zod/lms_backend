@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,11 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
     cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1):\d+$"
     frontend_base_url: str = "http://localhost:3000"
+
+    # When both are set and no super admin exists yet, startup creates this account
+    # (or promotes it if already registered). Ignored once a super admin exists.
+    admin_email: str | None = None
+    admin_password: str | None = Field(default=None, min_length=8, max_length=128)
 
     # Uploaded lesson files go to an S3-compatible bucket ("s3", the docker-compose
     # storage service by default) or to media_root on local disk ("local"). Either
